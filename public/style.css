@@ -1,0 +1,42 @@
+html {
+  margin: 0;
+}
+
+.app {
+  display: flex;
+  flex-flow: column wrap;
+  row-gap: 20px;
+  max-width: 500px;
+}
+
+.logo {
+  width: 100px;
+}
+
+.clock,
+article {
+  border: 1px solid hsl(224, 17%, 77%);
+  border-radius: 5px;
+  padding: 10px;
+}
+
+.lots {
+  display: flex;
+  flex-flow: column;
+  row-gap: 20px;
+  margin-bottom: 20px;
+}
+
+.lot {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: flex-start;
+  align-items: center;
+  align-content: flex-start;
+  column-gap: 20px;
+}
+
+.price {
+  order: 2;
+  margin-left: auto;
+}
