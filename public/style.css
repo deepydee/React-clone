@@ -20,6 +20,12 @@ article {
   padding: 10px;
 }
 
+.clock {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .lots {
   display: flex;
   flex-flow: column;
@@ -39,4 +45,27 @@ article {
 .price {
   order: 2;
   margin-left: auto;
+}
+
+.icon {
+  display: inline-block;
+  width: 25px;
+  height: 25px;
+}
+
+.day {
+  background: url('img/icons/brightness-high.svg') no-repeat center;
+}
+
+.night {
+  background: url('img/icons/moon.svg') no-repeat center;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  border-radius: 8px;
+  background-color: hsl(233, 100%, 95%);
 }
