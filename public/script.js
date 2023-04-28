@@ -1,3 +1,4 @@
+
 const api = {
   get (url) {
     switch (url) {
@@ -70,7 +71,7 @@ function App({ state }) {
 function Header() {
   const header = document.createElement('header');
   header.className = 'header';
-  //header.append(Logo());
+  header.append(Logo());
 
   return header;
 }
@@ -132,6 +133,7 @@ function Lots({ lots }) {
 function Lot({ lot }) {
   const node = document.createElement('article');
   node.className = 'lot';
+  // node.dataset.key = lot.id;
 
   const price = document.createElement('div');
   price.className = 'price';
@@ -206,7 +208,72 @@ api.get('/lots')
     .catch((err) => console.log(err)
 );
 
-function render (newDom, realDom) {
-  realDom.innerHTML = '';
-  realDom.append(newDom);
+function render (virtualDom, realDomRoot) {
+  const virtualDomRoot = document.createElement(realDomRoot.tagName);
+
+  virtualDomRoot.id = realDomRoot.id;
+  virtualDomRoot.append(virtualDom);
+
+  sync(virtualDomRoot, realDomRoot);
+}
+
+function sync(virtualNode, realNode) {
+  // sync element
+  if (virtualNode.id !== realNode.id) {
+    realNode.id = virtualNode.id;
+  }
+
+  if (virtualNode.className !== realNode.className) {
+    realNode.className = virtualNode.className;
+  }
+
+  if (virtualNode.attributes) {
+    Array.from(virtualNode.attributes).forEach((attr) =>
+      realNode[attr.name] = attr.value);
+  }
+
+  if (virtualNode.nodeValue !== realNode.nodeValue) {
+    realNode.nodeValue = virtualNode.nodeValue;
+  }
+
+  // sync child nodes
+  const virtualChildren = virtualNode.childNodes;
+  const realChildren = realNode.childNodes;
+
+  for (let i = 0; i < virtualChildren.length || i < realChildren.length; i++) {
+    const virtual = virtualChildren[i];
+    const real = realChildren[i];
+
+    // Remove
+    if (!virtual && real) {
+      realNode.remove(real);
+    }
+
+    // Update
+    if (virtual && real && virtual.tagName === real.tagName) {
+      sync(virtual, real);
+    }
+
+    // Replace
+    if (virtual && real && virtual.tagName !== real.tagName) {
+      const newReal = createRealNodeByVirtual(virtual);
+      sync(virtual, newReal);
+      real.replaceWith(newReal);
+    }
+
+    // Add
+    if (virtual && !real) {
+      const newReal = createRealNodeByVirtual(virtual);
+      sync(virtual, newReal);
+      realNode.append(newReal);
+    }
+  }
+}
+
+function createRealNodeByVirtual(virtual) {
+  if (virtual.nodeType === Node.TEXT_NODE) {
+    return document.createTextNode('');
+  }
+
+  return document.createElement(virtual.tagName);
 }
