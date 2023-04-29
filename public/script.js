@@ -55,162 +55,84 @@ let state = {
   lots: null,
 };
 
-function App({ state }) {
-  return {
-    type: 'div',
-    props: {
-      className: 'app',
-      children: [
-        {
-          type: Header,
-          props: {},
-        },
-        {
-          type: 'h1',
-          props: {
-            className: 'title',
-            children: [
-              'Hello!',
-            ]
-          },
-        },
-        {
-          type: Clock,
-          props: { time: state.time },
-        },
-        {
-          type: Lots,
-          props: { lots: state.lots },
-        },
-      ],
-    },
+const VDom = {
+  createElement: (type, props = {}, ...children) => {
+    const key = 'key' in props
+      ? props.key
+      : null;
+
+    if (children.length === 1) {
+      props.children = children[0];
+    } else {
+      props.children = children;
+    }
+
+    return {
+      type,
+      key,
+      props
+    }
   }
+}
+
+function App({ state }) {
+  return VDom.createElement(
+    'div',
+    { className: 'app' },
+    VDom.createElement(Header),
+    VDom.createElement('h1', { className: 'title' }, 'Hello!'),
+    VDom.createElement(Clock, { time: state.time }),
+    VDom.createElement(Lots, { lots: state.lots })
+  );
 }
 
 function Header() {
-  return {
-    type: 'header',
-    props: {
-      className: 'header',
-      children: [
-        {
-          type: Logo,
-        },
-      ]
-    },
-  }
+  return VDom.createElement(
+    'header',
+    { className: 'header' },
+    VDom.createElement(Logo)
+  );
 }
 
 function Logo() {
-  return {
-    type: 'img',
-    props: {
-      className: 'logo',
-      src: 'logo.png',
-    }
-  }
+  return VDom.createElement('img', { className: 'logo', src: 'logo.png' })
 }
 
 function Clock({ time }) {
   const isDay = time.getHours() >= 7 && time.getHours() <= 21;
-  return {
-    type: 'div',
-    props: {
-      className: 'clock',
-      children: [
-        {
-          type: 'span',
-          props: {
-            className: 'value',
-            children: [
-              time.toLocaleTimeString(),
-            ]
-          }
-        },
-        {
-          type: 'span',
-          props: {
-            className: isDay ? 'icon day' : 'icon night'
-          }
-        },
-      ]
-    }
-  }
+
+  return VDom.createElement('div', { className: 'clock' },
+    VDom.createElement('span', { className: 'value' }, time.toLocaleTimeString()),
+    VDom.createElement('span', { className: isDay ? 'icon day' : 'icon night' })
+  );
 }
 
 function Loading() {
-  return {
-    type: 'div',
-    props: {
-      className: 'loading',
-      children: [
-        'Loading...',
-      ],
-    }
-  }
+  return VDom.createElement('div', { className: 'loading' }, 'Loading...');
 }
 
 function Lots({ lots }) {
   if (lots === null) {
-    return {
-      type: Loading,
-      props: {}
-    }
+    return VDom.createElement(Loading);
   }
 
-  return {
-    type: 'div',
-    props: {
-      className: 'lots',
-      children: lots.map((lot) => ({
-        type: Lot,
-        props: { lot }
-      }))
-    }
-  }
+  return VDom.createElement('div', { className: 'lots' },
+    lots.map((lot) => VDom.createElement(Lot, { lot, key: lot.id }))
+  );
 }
 
-function Lot({ lot }) {
-  return {
-    type: 'article',
-    key: lot.id,
-    props: {
-      className: 'lot',
-      children: [
-        {
-          type: 'div',
-          props: {
-            className: 'price',
-            children: [
-              lot.price
-            ]
-          }
-        },
-        {
-          type: 'h1',
-          props: {
-            children: [
-              lot.name
-            ]
-          }
-        },
-        {
-          type: 'p',
-          props: {
-            children: [
-              lot.description
-            ]
-          }
-        }
-      ]
-    }
-  }
+function Lot({ lot, key }) {
+  return VDom.createElement('article', { className: 'lot', key },
+    VDom.createElement('div', { className: 'price' }, lot.price),
+    VDom.createElement('h1', {}, lot.name),
+    VDom.createElement('p', {}, lot.description)
+  );
 }
 
 // ###########################
 function renderView(state) {
   render(
-    App({ state }),
+    VDom.createElement(App, { state }),
     document.getElementById('root'),
   );
 }
