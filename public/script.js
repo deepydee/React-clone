@@ -90,7 +90,8 @@ const initialState = {
 };
 
 class Store {
-  constructor(initialState) {
+  constructor(reducer, initialState) {
+    this.reducer = reducer,
     this.state = initialState;
     this.listeners = [];
   }
@@ -109,13 +110,11 @@ class Store {
   }
 
   dispatch(action) {
-    this.state =  appReducer(this.state, action);
+    this.state =  this.reducer(this.state, action);
     this.listeners.forEach((listener) => listener());
   }
 
 }
-
-const store = new Store(initialState);
 
 function App({ state }) {
   return (
@@ -184,6 +183,7 @@ function renderView(state) {
   );
 }
 
+const store = new Store(appReducer, initialState);
 renderView(store.getState());
 
 store.subscribe(() => renderView(store.getState()));
