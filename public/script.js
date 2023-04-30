@@ -50,10 +50,38 @@ const stream = {
 
 // ###########################
 
-let state = {
+const initialState = {
   time: new Date(),
   lots: null,
 };
+
+class Store {
+  constructor(initialState) {
+    this.state = initialState;
+    this.listeners = [];
+  }
+
+  getState() {
+    return this.state;
+  }
+
+  subscribe(callback) {
+    this.listeners.push(callback);
+  }
+
+  changeState(diff) {
+    this.state = {
+      ...this.state,
+      ...(typeof diff === 'function'
+        ? diff(this.state)
+        : diff),
+    }
+
+    this.listeners.forEach((listener) => listener());
+  }
+}
+
+const store = new Store(initialState);
 
 function App({ state }) {
   return (
@@ -122,33 +150,25 @@ function renderView(state) {
   );
 }
 
-renderView(state);
+renderView(store.getState());
 
+store.subscribe(() => renderView(store.getState()));
 
 setInterval(() => {
-  state = {
-    ...state,
-    time: new Date(),
-  };
-
-  renderView(state);
-
+  store.changeState({
+    time: new Date()
+  });
 }, 1000);
 
 api.get('/lots')
     //.finally(() => alert("Загрузка завершена"))
-
     .then((lots) => {
-      state = {
-        ...state,
-        lots,
-      };
-
-      renderView(state);
+      store.changeState({
+        lots
+      });
 
       const onPrice = (data) => {
-        state = {
-          ...state,
+        store.changeState((state) => ({
           lots: state.lots.map((lot) => {
             if (lot.id === data.id) {
               return {
@@ -158,8 +178,7 @@ api.get('/lots')
             }
             return lot;
           }),
-        }
-        renderView(state);
+        }));
       };
 
       lots.forEach((lot) => {
