@@ -47,11 +47,16 @@ const stream = {
   }
 };
 
+const initialState = {
+  time: new Date(),
+  lots: null,
+};
+
 const SET_TIME = 'SET_TIME';
 const SET_LOTS = 'SET_LOTS';
 const CHANGE_LOT_PRICE = 'CHANGE_LOT_PRICE';
 
-function appReducer(state, action) {
+function appReducer(state = initialState, action) {
   switch (action.type) {
     case SET_TIME:
       return {
@@ -82,17 +87,29 @@ function appReducer(state, action) {
   }
 }
 
-// ###########################
+// Action creators
+const setTime = (time) => ({
+  type: SET_TIME,
+  time
+});
 
-const initialState = {
-  time: new Date(),
-  lots: null,
-};
+const setLots = (lots) => ({
+  type: SET_LOTS,
+  lots
+});
+
+const changeLotPrice = (id, price) => ({
+  type: CHANGE_LOT_PRICE,
+  id,
+  price
+});
+
+// ###########################
 
 class Store {
   constructor(reducer, initialState) {
     this.reducer = reducer,
-    this.state = initialState;
+    this.state = reducer(initialState, {type: null });
     this.listeners = [];
   }
 
@@ -183,34 +200,24 @@ function renderView(state) {
   );
 }
 
-const store = new Store(appReducer, initialState);
+const store = new Store(appReducer);
 renderView(store.getState());
 
 store.subscribe(() => renderView(store.getState()));
 
 setInterval(() => {
-  store.dispatch({
-    type: SET_TIME,
-    time: new Date()
-  });
+  store.dispatch(setTime(new Date()));
 }, 1000);
 
 api.get('/lots')
     //.finally(() => alert("Загрузка завершена"))
     .then((lots) => {
 
-    store.dispatch({
-      type: SET_LOTS,
-      lots
-    });
+    store.dispatch(setLots(lots));
 
     lots.forEach((lot) => {
       stream.subscribe(`price-${lot.id}`, (data) => {
-        store.dispatch({
-          type: CHANGE_LOT_PRICE,
-          id: data.id,
-          price: data.price
-        });
+        store.dispatch(changeLotPrice(data.id, data.price));
       });
     });
     })
