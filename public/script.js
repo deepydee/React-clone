@@ -25,7 +25,6 @@ const api = {
             )
           }, 3000);
         });
-        break;
 
       default:
         throw new Error('Unknown address')
@@ -65,17 +64,19 @@ class Store {
     return this.state;
   }
 
-  subscribe(callback) {
-    this.listeners.push(callback);
+  subscribe(listener) {
+    this.listeners.push(listener);
+
+    return () => {
+      const index = this.listeners.indexOf(listener);
+      this.listeners.splice(index, 1);
+    }
   }
 
-  changeState(diff) {
-    this.state = {
-      ...this.state,
-      ...(typeof diff === 'function'
-        ? diff(this.state)
-        : diff),
-    }
+  setState(state) {
+    this.state = typeof state === 'function'
+        ? state(this.state)
+        : state
 
     this.listeners.forEach((listener) => listener());
   }
@@ -154,35 +155,53 @@ renderView(store.getState());
 
 store.subscribe(() => renderView(store.getState()));
 
+function setTime(state, params) {
+  return {
+    ...state,
+    time: params.time
+  }
+}
+
+function setLots(state, params) {
+  return {
+    ...state,
+    lots: params.lots
+  }
+}
+
+function changeLotPrice (state, params) {
+  return {
+    ...state,
+    lots: state.lots.map((lot) => {
+      if (lot.id === params.id) {
+        return {
+          ...lot,
+          price: params.price,
+        }
+      }
+
+      return lot;
+    }),
+  }
+}
+
 setInterval(() => {
-  store.changeState({
-    time: new Date()
-  });
+  store.setState((state) => setTime(state, { time: new Date() }));
 }, 1000);
 
 api.get('/lots')
     //.finally(() => alert("Загрузка завершена"))
     .then((lots) => {
-      store.changeState({
-        lots
-      });
-
-      const onPrice = (data) => {
-        store.changeState((state) => ({
-          lots: state.lots.map((lot) => {
-            if (lot.id === data.id) {
-              return {
-                ...lot,
-                price: data.price,
-              }
-            }
-            return lot;
-          }),
-        }));
-      };
+      store.setState((state) => setLots(state, { lots }));
 
       lots.forEach((lot) => {
-        stream.subscribe(`price-${lot.id}`, onPrice);
+        stream.subscribe(`price-${lot.id}`, (data) => {
+          store.setState((state) => changeLotPrice(state,
+            { id: data.id,
+              price: data.price
+            }
+          ));
+        });
       });
 
     })
