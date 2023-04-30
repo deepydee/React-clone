@@ -55,85 +55,69 @@ let state = {
   lots: null,
 };
 
-const VDom = {
-  createElement: (type, props = {}, ...children) => {
-    const key = 'key' in props
-      ? props.key
-      : null;
-
-    if (children.length === 1) {
-      props.children = children[0];
-    } else {
-      props.children = children;
-    }
-
-    return {
-      type,
-      key,
-      props
-    }
-  }
-}
-
 function App({ state }) {
-  return React.createElement(
-    'div',
-    { className: 'app' },
-    React.createElement(Header),
-    React.createElement('h1', { className: 'title' }, 'Hello!'),
-    React.createElement(Clock, { time: state.time }),
-    React.createElement(Lots, { lots: state.lots })
-  );
+  return (
+    <div className="app">
+      <Header />
+      <Clock time={state.time} />
+      <Lots lots={state.lots} />
+    </div>
+  )
 }
 
 function Header() {
-  return React.createElement(
-    'header',
-    { className: 'header' },
-    React.createElement(Logo)
-  );
+  return (
+  <header className="header">
+    <Logo />
+  </header>
+  )
 }
 
 function Logo() {
-  // return <img className="logo" src="logo.png" />
-  return React.createElement('img', { className: 'logo', src: 'logo.png' })
+  return <img className="logo" src="logo.png" alt="" />
 }
 
 function Clock({ time }) {
   const isDay = time.getHours() >= 7 && time.getHours() <= 21;
 
-  return React.createElement('div', { className: 'clock' },
-    React.createElement('span', { className: 'value' }, time.toLocaleTimeString()),
-    React.createElement('span', { className: isDay ? 'icon day' : 'icon night' })
-  );
+  return (
+    <div className="clock">
+      <span className="value">{time.toLocaleTimeString()}</span>
+      <span className={isDay ? 'icon day' : 'icon night'}></span>
+    </div>
+  )
 }
 
 function Loading() {
-  return React.createElement('div', { className: 'loading' }, 'Loading...');
+  return <div className="loading">Loading...</div>
 }
 
 function Lots({ lots }) {
   if (lots === null) {
-    return React.createElement(Loading);
+    return <Loading />
   }
 
-  return React.createElement('div', { className: 'lots' },
-    lots.map((lot) => React.createElement(Lot, { lot, key: lot.id }))
-  );
+  return (
+    <div className="lots">
+      {lots.map((lot) => <Lot lot={lot} key={lot.id} />)}
+    </div>
+  )
 }
 
-function Lot({ lot, k }) {
-  return React.createElement('article', { className: 'lot', k },
-    React.createElement('div', { className: 'price' }, lot.price),
-    React.createElement('h1', {}, lot.name),
-    React.createElement('p', {}, lot.description)
-  );
+function Lot({ lot }) {
+  return (
+    <article className="lot">
+      <div className="price">{lot.price}</div>
+      <h1>{lot.name}</h1>
+      <p>{lot.description}</p>
+    </article>
+  )
 }
 
 // ###########################
 function renderView(state) {
   ReactDOM.render(
-    React.createElement(App, { state }),
+    <App state={state} />,
     document.getElementById('root'),
   );
 }
