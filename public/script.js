@@ -47,6 +47,41 @@ const stream = {
   }
 };
 
+const SET_TIME = 'SET_TIME';
+const SET_LOTS = 'SET_LOTS';
+const CHANGE_LOT_PRICE = 'CHANGE_LOT_PRICE';
+
+function appReducer(state, action) {
+  switch (action.type) {
+    case SET_TIME:
+      return {
+        ...state,
+        time: action.time
+      }
+    case SET_LOTS:
+      return {
+        ...state,
+        lots: action.lots
+      }
+    case CHANGE_LOT_PRICE:
+      return {
+        ...state,
+        lots: state.lots.map((lot) => {
+          if (lot.id === action.id) {
+            return {
+              ...lot,
+              price: action.price,
+            }
+          }
+
+          return lot;
+        }),
+      }
+    default:
+      return state;
+  }
+}
+
 // ###########################
 
 const initialState = {
@@ -73,13 +108,11 @@ class Store {
     }
   }
 
-  setState(state) {
-    this.state = typeof state === 'function'
-        ? state(this.state)
-        : state
-
+  dispatch(action) {
+    this.state =  appReducer(this.state, action);
     this.listeners.forEach((listener) => listener());
   }
+
 }
 
 const store = new Store(initialState);
@@ -155,66 +188,31 @@ renderView(store.getState());
 
 store.subscribe(() => renderView(store.getState()));
 
-function appReducer(state, action, params) {
-  switch (action) {
-    case 'setTime':
-      return {
-        ...state,
-        time: params.time
-      }
-    case 'setLots':
-      return {
-        ...state,
-        lots: params.lots
-      }
-    case 'changeLotPrice':
-      return {
-        ...state,
-        lots: state.lots.map((lot) => {
-          if (lot.id === params.id) {
-            return {
-              ...lot,
-              price: params.price,
-            }
-          }
-
-          return lot;
-        }),
-      }
-    default:
-      return state;
-  }
-}
-
 setInterval(() => {
-  store.setState((state) => appReducer(
-    state,
-    'setTime',
-    { time: new Date()}
-    ));
+  store.dispatch({
+    type: SET_TIME,
+    time: new Date()
+  });
 }, 1000);
 
 api.get('/lots')
     //.finally(() => alert("Загрузка завершена"))
     .then((lots) => {
-      store.setState((state) => appReducer(
-        state,
-        'setLots',
-        { lots }
-      ));
 
-      lots.forEach((lot) => {
-        stream.subscribe(`price-${lot.id}`, (data) => {
-          store.setState((state) => appReducer(
-            state,
-            'changeLotPrice',
-            { id: data.id,
-              price: data.price
-            }
-          ));
+    store.dispatch({
+      type: SET_LOTS,
+      lots
+    });
+
+    lots.forEach((lot) => {
+      stream.subscribe(`price-${lot.id}`, (data) => {
+        store.dispatch({
+          type: CHANGE_LOT_PRICE,
+          id: data.id,
+          price: data.price
         });
       });
-
+    });
     })
 
     .catch((err) => console.log(err)
