@@ -47,22 +47,33 @@ const stream = {
   }
 };
 
-const initialState = {
+const clockInitialState = {
   time: new Date(),
-  lots: null,
 };
 
 const SET_TIME = 'SET_TIME';
+
+const auctionInitialState = {
+  lots: null,
+};
+
 const SET_LOTS = 'SET_LOTS';
 const CHANGE_LOT_PRICE = 'CHANGE_LOT_PRICE';
 
-function appReducer(state = initialState, action) {
+function clockReducer(state = clockInitialState, action) {
   switch (action.type) {
     case SET_TIME:
       return {
         ...state,
         time: action.time
       }
+    default:
+      return state;
+  }
+}
+
+function auctionReducer(state = auctionInitialState, action) {
+  switch (action.type) {
     case SET_LOTS:
       return {
         ...state,
@@ -137,8 +148,8 @@ function App({ state }) {
   return (
     <div className="app">
       <Header />
-      <Clock time={state.time} />
-      <Lots lots={state.lots} />
+      <Clock time={state.clock.time} />
+      <Lots lots={state.auction.lots} />
     </div>
   )
 }
@@ -200,7 +211,23 @@ function renderView(state) {
   );
 }
 
-const store = new Store(appReducer);
+
+const combineReducers = (reducers) => {
+  return (state = {}, action) => {
+    const result = {};
+    Object.entries(reducers).forEach(([key, reducer]) => {
+      result[key] = reducer(state[key], action);
+    });
+
+    return result;
+  }
+}
+
+const store = new Store(combineReducers({
+  clock: clockReducer,
+  auction: auctionReducer,
+}));
+
 renderView(store.getState());
 
 store.subscribe(() => renderView(store.getState()));
