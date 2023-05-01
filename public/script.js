@@ -178,13 +178,16 @@ const unfavoriteLot = (id) => ({
 
 // ###########################
 
+const StoreContext = React.createContext();
 
-function App({ store }) {
+// ###########################
+
+function App() {
   return (
     <div className="app">
       <Header />
-      <ClockConnected store={store} />
-      <LotsConnected store={store} />
+      <ClockConnected />
+      <LotsConnected />
     </div>
   )
 }
@@ -201,11 +204,17 @@ function Logo() {
   return <img className="logo" src="logo.png" alt="" />
 }
 
-function ClockConnected({ store }) {
-  const state = store.getState();
-  const time = state.clock.time;
+function ClockConnected() {
+  return (
+    <StoreContext.Consumer>
+      {(store) => {
+        const state = store.getState();
+        const time = state.clock.time;
 
-  return <Clock time={time} />
+        return <Clock time={time} />
+      }}
+    </StoreContext.Consumer>
+  )
 }
 
 function Clock({ time }) {
@@ -260,12 +269,17 @@ function Loading() {
   return <div className="loading">Loading...</div>
 }
 
-function LotsConnected({ store }) {
-  const state = store.getState();
-  const lots = state.auction.lots;
-
+function LotsConnected() {
   return (
-  <Lots lots={lots} store={store} />)
+    <StoreContext.Consumer>
+      {(store) => {
+         const state = store.getState();
+         const lots = state.auction.lots;
+
+         return <Lots lots={lots} store={store} />;
+      }}
+    </StoreContext.Consumer>
+  )
 }
 
 function Lots({ lots, store }) {
@@ -307,30 +321,36 @@ function LotsTable({ lots, favorite, unfavorite }) {
   )
 }
 
-function LotConnected({ lot, store }) {
-  const dispatch = store.dispatch;
-
-  const favorite = (id) => {
-    api.post(`/lots/${id}/favorite`)
-      .then(() => {
-        dispatch(favoriteLot(id));
-      });
-  }
-
-  const unfavorite = (id) => {
-    api.post(`/lots/${id}/unfavorite`)
-      .then(() => {
-        dispatch(unfavoriteLot(id));
-      });
-  }
-
+function LotConnected({ lot }) {
   return (
-    <Lot
-      lot={lot}
-      key={lot.id}
-      favorite={favorite}
-      unfavorite={unfavorite}
-    />
+    <StoreContext.Consumer>
+      {(store) => {
+          const dispatch = store.dispatch;
+
+          const favorite = (id) => {
+            api.post(`/lots/${id}/favorite`)
+              .then(() => {
+                dispatch(favoriteLot(id));
+              });
+          }
+
+          const unfavorite = (id) => {
+            api.post(`/lots/${id}/unfavorite`)
+              .then(() => {
+                dispatch(unfavoriteLot(id));
+              });
+          }
+
+          return (
+            <Lot
+              lot={lot}
+              key={lot.id}
+              favorite={favorite}
+              unfavorite={unfavorite}
+            />
+          )
+      }}
+    </StoreContext.Consumer>
   )
 }
 
@@ -376,7 +396,9 @@ function Favorite({ active, favorite, unfavorite }) {
 
 function renderView(store) {
   ReactDOM.render(
-    <App store={store} />,
+    <StoreContext.Provider value={store}>
+      <App />
+    </StoreContext.Provider>,
     document.getElementById('root'),
   );
 }
