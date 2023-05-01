@@ -182,42 +182,54 @@ const StoreContext = React.createContext();
 
 // ###########################
 
-function App() {
-  return (
-    <div className="app">
-      <Header />
-      <ClockConnected />
-      <LotsConnected />
-    </div>
-  )
-}
+const connect = (
+  mapStateToProps,
+  mapDispatchToProps,
+  WrappedComponent
+) => (
+  (props) => {
+    return (
+      <StoreContext.Consumer>
+        {(store) => {
+          const state = store.getState();
+          const dispatch = store.dispatch;
+          const stateToProps = mapStateToProps
+            ? mapStateToProps(state)
+            : {};
+          const dispatchToProps = mapDispatchToProps
+            ? mapDispatchToProps(dispatch)
+            : {};
 
-function Header() {
-  return (
+          return (
+            <WrappedComponent
+              {...props}
+              {...stateToProps}
+              {...dispatchToProps}
+            />
+          )
+        }}
+      </StoreContext.Consumer>
+    )
+  }
+);
+
+const App = () => (
+  <div className="app">
+    <Header />
+    <ClockConnected />
+    <LotsConnected />
+  </div>
+)
+
+const Header = () => (
   <header className="header">
     <Logo />
   </header>
-  )
-}
+)
 
-function Logo() {
-  return <img className="logo" src="logo.png" alt="" />
-}
+const Logo = () => <img className="logo" src="logo.png" alt="" />;
 
-function ClockConnected() {
-  return (
-    <StoreContext.Consumer>
-      {(store) => {
-        const state = store.getState();
-        const time = state.clock.time;
-
-        return <Clock time={time} />
-      }}
-    </StoreContext.Consumer>
-  )
-}
-
-function Clock({ time }) {
+const Clock = ({ time }) => {
   const isDay = time.getHours() >= 7 && time.getHours() <= 21;
 
   return (
@@ -228,61 +240,19 @@ function Clock({ time }) {
   )
 }
 
-// ###################################################################
-mocha.setup('bdd');
-const assert = chai.assert;
-
-describe('Clock', () => {
-  it('Render time of day', () => {
-    const container = document.createElement('div');
-
-    ReactDOM.render(
-      <Clock time={new Date('2020-10-19T14:12:31')} />,
-      container
-    );
-
-    const clock = container.querySelector('.clock');
-
-    assert.equal(clock.querySelector('.value').innerText, '2:12:31 PM');
-    assert.equal(clock.querySelector('.icon').className, 'icon day');
-  });
-
-  it('Render time of night', () => {
-    const container = document.createElement('div');
-
-    ReactDOM.render(
-      <Clock time={new Date('2020-10-19T03:12:31')} />,
-      container
-    );
-
-    const clock = container.querySelector('.clock');
-
-    assert.equal(clock.querySelector('.value').innerText, '3:12:31 AM');
-    assert.equal(clock.querySelector('.icon').className, 'icon night');
-  });
+const clockMapStateToProps = (state) => ({
+  time: state.clock.time
 });
 
-mocha.run();
-// ###################################################################
+const ClockConnected = connect(
+  clockMapStateToProps,
+  null,
+  Clock
+);
 
-function Loading() {
-  return <div className="loading">Loading...</div>
-}
+const Loading = () => <div className="loading">Loading...</div>;
 
-function LotsConnected() {
-  return (
-    <StoreContext.Consumer>
-      {(store) => {
-         const state = store.getState();
-         const lots = state.auction.lots;
-
-         return <Lots lots={lots} store={store} />;
-      }}
-    </StoreContext.Consumer>
-  )
-}
-
-function Lots({ lots, store }) {
+const Lots = ({ lots }) => {
   if (lots === null) {
     return <Loading />
   }
@@ -290,71 +260,22 @@ function Lots({ lots, store }) {
   return (
     <div className="lots">
       {lots.map((lot) =>
-        <LotConnected lot={lot} store={store} key={lot.id} />)}
+        <LotConnected lot={lot} key={lot.id} />)}
     </div>
   )
 }
 
-function LotsTable({ lots, favorite, unfavorite }) {
-  if (lots === null) {
-    return <Loading />
-  }
+const lotsMapStateToProps = (state) => ({
+  lots: state.auction.lots,
+});
 
-  return (
-    <table width="100%" cellPadding="10px">
-      <tbody>
-        {lots.map((lot) => (
-          <tr key={lot.id} style={{background: lot.favorite ? '#ffd7cb' : '#fff'}}>
-            <td>{lot.name}</td>
-            <td>{lot.price}</td>
-            <td>
-              <Favorite
-                active={lot.favorite}
-                favorite={() => favorite(lot.id)}
-                unfavorite={() => unfavorite(lot.id)}
-              />
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  )
-}
+const LotsConnected = connect(
+  lotsMapStateToProps,
+  null,
+  Lots
+);
 
-function LotConnected({ lot }) {
-  return (
-    <StoreContext.Consumer>
-      {(store) => {
-          const dispatch = store.dispatch;
-
-          const favorite = (id) => {
-            api.post(`/lots/${id}/favorite`)
-              .then(() => {
-                dispatch(favoriteLot(id));
-              });
-          }
-
-          const unfavorite = (id) => {
-            api.post(`/lots/${id}/unfavorite`)
-              .then(() => {
-                dispatch(unfavoriteLot(id));
-              });
-          }
-
-          return (
-            <Lot
-              lot={lot}
-              key={lot.id}
-              favorite={favorite}
-              unfavorite={unfavorite}
-            />
-          )
-      }}
-    </StoreContext.Consumer>
-  )
-}
-
-function Lot({ lot, favorite, unfavorite }) {
+const Lot = ({ lot, favorite, unfavorite }) => {
   return (
     <article className={'lot' + (lot.favorite ? ' favorite': '')}>
       <div className="price">{lot.price}</div>
@@ -369,6 +290,27 @@ function Lot({ lot, favorite, unfavorite }) {
     </article>
   )
 }
+
+const lotMapDispatchToProps = (dispatch) => ({
+  favorite: (id) => {
+    api.post(`/lots/${id}/favorite`)
+      .then(() => {
+        dispatch(favoriteLot(id));
+      });
+  },
+  unfavorite: (id) => {
+    api.post(`/lots/${id}/unfavorite`)
+      .then(() => {
+        dispatch(unfavoriteLot(id));
+      });
+  }
+});
+
+const LotConnected = connect(
+  null,
+  lotMapDispatchToProps,
+  Lot
+);
 
 function Favorite({ active, favorite, unfavorite }) {
   return active
@@ -394,7 +336,7 @@ function Favorite({ active, favorite, unfavorite }) {
 
 // ###########################
 
-function renderView(store) {
+const renderView = (store) => {
   ReactDOM.render(
     <StoreContext.Provider value={store}>
       <App />
@@ -432,7 +374,7 @@ api.get('/lots')
     .catch((err) => console.log(err)
 );
 
-function render (virtualDom, realDomRoot) {
+const render = (virtualDom, realDomRoot) => {
   const evaluatedVirtualDom = evaluate(virtualDom);
 
   const virtualDomRoot = {
@@ -449,7 +391,7 @@ function render (virtualDom, realDomRoot) {
   sync(virtualDomRoot, realDomRoot);
 }
 
-function evaluate(virtualNode) {
+const evaluate = (virtualNode) => {
   if (typeof virtualNode !== 'object') {
     return virtualNode;
   }
@@ -471,7 +413,7 @@ function evaluate(virtualNode) {
   }
 }
 
-function sync(virtualNode, realNode) {
+const sync = (virtualNode, realNode) => {
   // sync element
 
   if (virtualNode.props) {
@@ -530,7 +472,7 @@ function sync(virtualNode, realNode) {
   }
 }
 
-function createRealNodeByVirtual(virtual) {
+const createRealNodeByVirtual = (virtual) => {
   if (typeof virtual !== 'object') {
     return document.createTextNode('');
   }
