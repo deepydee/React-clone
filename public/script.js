@@ -179,22 +179,12 @@ const unfavoriteLot = (id) => ({
 // ###########################
 
 
-function App({ state, favorite, unfavorite }) {
+function App({ store }) {
   return (
     <div className="app">
       <Header />
-      <Clock time={state.clock.time} />
-      <Lots
-        lots={state.auction.lots}
-        favorite={favorite}
-        unfavorite={unfavorite}
-      />
-
-      <LotsTable
-        lots={state.auction.lots}
-        favorite={favorite}
-        unfavorite={unfavorite}
-      />
+      <ClockConnected store={store} />
+      <LotsConnected store={store} />
     </div>
   )
 }
@@ -211,6 +201,13 @@ function Logo() {
   return <img className="logo" src="logo.png" alt="" />
 }
 
+function ClockConnected({ store }) {
+  const state = store.getState();
+  const time = state.clock.time;
+
+  return <Clock time={time} />
+}
+
 function Clock({ time }) {
   const isDay = time.getHours() >= 7 && time.getHours() <= 21;
 
@@ -222,11 +219,56 @@ function Clock({ time }) {
   )
 }
 
+// ###################################################################
+mocha.setup('bdd');
+const assert = chai.assert;
+
+describe('Clock', () => {
+  it('Render time of day', () => {
+    const container = document.createElement('div');
+
+    ReactDOM.render(
+      <Clock time={new Date('2020-10-19T14:12:31')} />,
+      container
+    );
+
+    const clock = container.querySelector('.clock');
+
+    assert.equal(clock.querySelector('.value').innerText, '2:12:31 PM');
+    assert.equal(clock.querySelector('.icon').className, 'icon day');
+  });
+
+  it('Render time of night', () => {
+    const container = document.createElement('div');
+
+    ReactDOM.render(
+      <Clock time={new Date('2020-10-19T03:12:31')} />,
+      container
+    );
+
+    const clock = container.querySelector('.clock');
+
+    assert.equal(clock.querySelector('.value').innerText, '3:12:31 AM');
+    assert.equal(clock.querySelector('.icon').className, 'icon night');
+  });
+});
+
+mocha.run();
+// ###################################################################
+
 function Loading() {
   return <div className="loading">Loading...</div>
 }
 
-function Lots({ lots, favorite, unfavorite }) {
+function LotsConnected({ store }) {
+  const state = store.getState();
+  const lots = state.auction.lots;
+
+  return (
+  <Lots lots={lots} store={store} />)
+}
+
+function Lots({ lots, store }) {
   if (lots === null) {
     return <Loading />
   }
@@ -234,7 +276,7 @@ function Lots({ lots, favorite, unfavorite }) {
   return (
     <div className="lots">
       {lots.map((lot) =>
-        <Lot lot={lot} favorite={favorite} unfavorite={unfavorite} key={lot.id} />)}
+        <LotConnected lot={lot} store={store} key={lot.id} />)}
     </div>
   )
 }
@@ -262,6 +304,33 @@ function LotsTable({ lots, favorite, unfavorite }) {
         ))}
       </tbody>
     </table>
+  )
+}
+
+function LotConnected({ lot, store }) {
+  const dispatch = store.dispatch;
+
+  const favorite = (id) => {
+    api.post(`/lots/${id}/favorite`)
+      .then(() => {
+        dispatch(favoriteLot(id));
+      });
+  }
+
+  const unfavorite = (id) => {
+    api.post(`/lots/${id}/unfavorite`)
+      .then(() => {
+        dispatch(unfavoriteLot(id));
+      });
+  }
+
+  return (
+    <Lot
+      lot={lot}
+      key={lot.id}
+      favorite={favorite}
+      unfavorite={unfavorite}
+    />
   )
 }
 
@@ -306,28 +375,8 @@ function Favorite({ active, favorite, unfavorite }) {
 // ###########################
 
 function renderView(store) {
-  const state = store.getState();
-
-  const favorite = (id) => {
-    api.post(`/lots/${id}/favorite`)
-      .then(() => {
-        store.dispatch(favoriteLot(id));
-      });
-  }
-
-  const unfavorite = (id) => {
-    api.post(`/lots/${id}/unfavorite`)
-      .then(() => {
-        store.dispatch(unfavoriteLot(id));
-      });
-  }
-
   ReactDOM.render(
-    <App
-      state={state}
-      favorite={favorite}
-      unfavorite={unfavorite}
-    />,
+    <App store={store} />,
     document.getElementById('root'),
   );
 }
