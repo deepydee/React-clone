@@ -1,6 +1,6 @@
 
 const api = {
-  get (url) {
+  get(url) {
     switch (url) {
       case '/lots':
         return new Promise((resolve, reject) => {
@@ -11,12 +11,14 @@ const api = {
                 name: 'Apple',
                 description: 'Apple description',
                 price: 16,
+                favorite: true,
               },
               {
                 id: 2,
                 name: 'Orange',
                 description: 'Orange description',
                 price: 41,
+                favorite: false,
               },
             ]);
 
@@ -29,6 +31,25 @@ const api = {
       default:
         throw new Error('Unknown address')
     }
+  },
+  post(url) {
+    if (/^\/lots\/(\d+)\/favorite$/.exec(url)) {
+      return new Promise ((resolve) => {
+        setTimeout(() => {
+          resolve({})
+        }, 500);
+      });
+    }
+
+    if (/^\/lots\/(\d+)\/unfavorite$/.exec(url)) {
+      return new Promise ((resolve) => {
+        setTimeout(() => {
+          resolve({})
+        }, 500);
+      });
+    }
+
+    throw new Error('Unknown address');
   }
 };
 
@@ -59,6 +80,8 @@ const auctionInitialState = {
 
 const SET_LOTS = 'SET_LOTS';
 const CHANGE_LOT_PRICE = 'CHANGE_LOT_PRICE';
+const FAVORITE_LOT = 'FAVORITE_LOT';
+const UNFAVORITE_LOT = 'UNFAVORITE_LOT';
 
 function clockReducer(state = clockInitialState, action) {
   switch (action.type) {
@@ -93,6 +116,34 @@ function auctionReducer(state = auctionInitialState, action) {
           return lot;
         }),
       }
+    case FAVORITE_LOT:
+      return {
+        ...state,
+        lots: state.lots.map((lot) => {
+          if (lot.id === action.id) {
+            return {
+              ...lot,
+              favorite: true
+            }
+          }
+
+          return lot;
+        })
+      }
+    case UNFAVORITE_LOT:
+      return {
+        ...state,
+        lots: state.lots.map((lot) => {
+          if (lot.id === action.id) {
+            return {
+              ...lot,
+              favorite: false
+            }
+          }
+
+          return lot;
+        })
+      }
     default:
       return state;
   }
@@ -115,15 +166,35 @@ const changeLotPrice = (id, price) => ({
   price
 });
 
+const favoriteLot = (id) => ({
+  type: FAVORITE_LOT,
+  id
+});
+
+const unfavoriteLot = (id) => ({
+  type: UNFAVORITE_LOT,
+  id
+});
+
 // ###########################
 
 
-function App({ state }) {
+function App({ state, favorite, unfavorite }) {
   return (
     <div className="app">
       <Header />
       <Clock time={state.clock.time} />
-      <Lots lots={state.auction.lots} />
+      <Lots
+        lots={state.auction.lots}
+        favorite={favorite}
+        unfavorite={unfavorite}
+      />
+
+      <LotsTable
+        lots={state.auction.lots}
+        favorite={favorite}
+        unfavorite={unfavorite}
+      />
     </div>
   )
 }
@@ -155,32 +226,108 @@ function Loading() {
   return <div className="loading">Loading...</div>
 }
 
-function Lots({ lots }) {
+function Lots({ lots, favorite, unfavorite }) {
   if (lots === null) {
     return <Loading />
   }
 
   return (
     <div className="lots">
-      {lots.map((lot) => <Lot lot={lot} key={lot.id} />)}
+      {lots.map((lot) =>
+        <Lot lot={lot} favorite={favorite} unfavorite={unfavorite} key={lot.id} />)}
     </div>
   )
 }
 
-function Lot({ lot }) {
+function LotsTable({ lots, favorite, unfavorite }) {
+  if (lots === null) {
+    return <Loading />
+  }
+
   return (
-    <article className="lot">
+    <table width="100%" cellPadding="10px">
+      <tbody>
+        {lots.map((lot) => (
+          <tr key={lot.id} style={{background: lot.favorite ? '#ffd7cb' : '#fff'}}>
+            <td>{lot.name}</td>
+            <td>{lot.price}</td>
+            <td>
+              <Favorite
+                active={lot.favorite}
+                favorite={() => favorite(lot.id)}
+                unfavorite={() => unfavorite(lot.id)}
+              />
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+function Lot({ lot, favorite, unfavorite }) {
+  return (
+    <article className={'lot' + (lot.favorite ? ' favorite': '')}>
       <div className="price">{lot.price}</div>
       <h1>{lot.name}</h1>
       <p>{lot.description}</p>
+      <Favorite
+        active={lot.favorite}
+        id={lot.id}
+        favorite={() => favorite(lot.id)}
+        unfavorite={() => unfavorite(lot.id)}
+      />
     </article>
   )
 }
 
+function Favorite({ active, favorite, unfavorite }) {
+  return active
+    ? (
+    <button
+      type="button"
+      onClick={unfavorite}
+      className="btn unfavorite"
+    >
+    <ion-icon name="heart-sharp"></ion-icon> Unfavorite
+      </button>
+      )
+    : (
+    <button
+    type="button"
+    onClick={favorite}
+    className="btn favorite"
+    >
+    <ion-icon name="heart-outline"></ion-icon> Favorite
+    </button>
+    )
+}
+
 // ###########################
-function renderView(state) {
+
+function renderView(store) {
+  const state = store.getState();
+
+  const favorite = (id) => {
+    api.post(`/lots/${id}/favorite`)
+      .then(() => {
+        store.dispatch(favoriteLot(id));
+      });
+  }
+
+  const unfavorite = (id) => {
+    api.post(`/lots/${id}/unfavorite`)
+      .then(() => {
+        store.dispatch(unfavoriteLot(id));
+      });
+  }
+
   ReactDOM.render(
-    <App state={state} />,
+    <App
+      state={state}
+      favorite={favorite}
+      unfavorite={unfavorite}
+    />,
     document.getElementById('root'),
   );
 }
@@ -190,9 +337,9 @@ const store = new Redux.createStore(Redux.combineReducers({
   auction: auctionReducer,
 }));
 
-renderView(store.getState());
+renderView(store);
 
-store.subscribe(() => renderView(store.getState()));
+store.subscribe(() => renderView(store));
 
 setInterval(() => {
   store.dispatch(setTime(new Date()));

@@ -42,6 +42,34 @@ article {
   column-gap: 20px;
 }
 
+.lot.favorite {
+  border-color: #ffd7cb;
+  background: #ffd7cb;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  column-gap: 6px;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.btn.unfavorite {
+  background: #fff;
+  border: 1px solid #ff8c68;
+  color: #dc0000;
+}
+
+.btn.favorite {
+  background: #fff;
+  border: 1px solid #999;
+  color: #000;
+}
+
 .price {
   order: 2;
   margin-left: auto;
