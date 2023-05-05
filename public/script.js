@@ -181,53 +181,6 @@ const unfavoriteLot = (id) => ({
 const StoreContext = React.createContext();
 
 // ###########################
-
-const connect = (
-  mapStateToProps,
-  mapDispatchToProps
-) => (WrappedComponent) => (
-  ((props) => {
-    return (
-      <StoreContext.Consumer>
-        {(store) => {
-          return React.createElement(
-            class extends React.Component {
-              render() {
-                const state = store.getState();
-                const dispatch = store.dispatch;
-                const stateToProps = mapStateToProps
-                  ? mapStateToProps(state)
-                  : {};
-                const dispatchToProps = mapDispatchToProps
-                  ? mapDispatchToProps(dispatch)
-                  : {};
-
-                return (
-                  <WrappedComponent
-                    {...this.props}
-                    {...stateToProps}
-                    {...dispatchToProps}
-                  />
-                )
-              }
-
-              componentDidMount() {
-                this.unsubscribe = store.subscribe(this.forceUpdate.bind(this));
-              }
-
-              componentWillUnmount() {
-                this.unsubscribe();
-              }
-
-            },
-            props
-          );
-        }}
-      </StoreContext.Consumer>
-    )
-  }
-));
-
 function App () {
   return (
   <div className="app">
@@ -264,7 +217,7 @@ const clockMapStateToProps = (state) => ({
   time: state.clock.time
 });
 
-const ClockConnected = connect(
+const ClockConnected = ReactRedux.connect(
   clockMapStateToProps,
   null
 )(Clock);
@@ -288,7 +241,7 @@ const lotsMapStateToProps = (state) => ({
   lots: state.auction.lots,
 });
 
-const LotsConnected = connect(
+const LotsConnected = ReactRedux.connect(
   lotsMapStateToProps,
   null
 )(Lots);
@@ -324,7 +277,7 @@ const lotMapDispatchToProps = (dispatch) => ({
   }
 });
 
-const LotConnected = connect(
+const LotConnected = ReactRedux.connect(
   null,
   lotMapDispatchToProps
 )(Lot);
@@ -358,16 +311,12 @@ const store = new Redux.createStore(Redux.combineReducers({
 }));
 
 ReactDOM.render(
-  <StoreContext.Provider value={store}>
+  <ReactRedux.Provider store={store}>
     <App />
-  </StoreContext.Provider>,
+  </ReactRedux.Provider>,
   document.getElementById('root'),
 );
 
-
-// renderView(store);
-
-// store.subscribe(() => renderView(store));
 
 setInterval(() => {
   store.dispatch(setTime(new Date()));
