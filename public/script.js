@@ -184,10 +184,9 @@ const StoreContext = React.createContext();
 
 const connect = (
   mapStateToProps,
-  mapDispatchToProps,
-  WrappedComponent
-) => (
-  (props) => {
+  mapDispatchToProps
+) => (WrappedComponent) => (
+  ((props) => {
     return (
       <StoreContext.Consumer>
         {(store) => {
@@ -211,7 +210,7 @@ const connect = (
       </StoreContext.Consumer>
     )
   }
-);
+));
 
 const App = () => (
   <div className="app">
@@ -246,9 +245,8 @@ const clockMapStateToProps = (state) => ({
 
 const ClockConnected = connect(
   clockMapStateToProps,
-  null,
-  Clock
-);
+  null
+)(Clock);
 
 const Loading = () => <div className="loading">Loading...</div>;
 
@@ -271,9 +269,8 @@ const lotsMapStateToProps = (state) => ({
 
 const LotsConnected = connect(
   lotsMapStateToProps,
-  null,
-  Lots
-);
+  null
+)(Lots);
 
 const Lot = ({ lot, favorite, unfavorite }) => {
   return (
@@ -308,9 +305,8 @@ const lotMapDispatchToProps = (dispatch) => ({
 
 const LotConnected = connect(
   null,
-  lotMapDispatchToProps,
-  Lot
-);
+  lotMapDispatchToProps
+)(Lot);
 
 function Favorite({ active, favorite, unfavorite }) {
   return active
