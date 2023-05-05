@@ -190,53 +190,74 @@ const connect = (
     return (
       <StoreContext.Consumer>
         {(store) => {
-          const state = store.getState();
-          const dispatch = store.dispatch;
-          const stateToProps = mapStateToProps
-            ? mapStateToProps(state)
-            : {};
-          const dispatchToProps = mapDispatchToProps
-            ? mapDispatchToProps(dispatch)
-            : {};
+          return React.createElement(
+            class extends React.Component {
+              render() {
+                const state = store.getState();
+                const dispatch = store.dispatch;
+                const stateToProps = mapStateToProps
+                  ? mapStateToProps(state)
+                  : {};
+                const dispatchToProps = mapDispatchToProps
+                  ? mapDispatchToProps(dispatch)
+                  : {};
 
-          return (
-            <WrappedComponent
-              {...props}
-              {...stateToProps}
-              {...dispatchToProps}
-            />
-          )
+                return (
+                  <WrappedComponent
+                    {...this.props}
+                    {...stateToProps}
+                    {...dispatchToProps}
+                  />
+                )
+              }
+
+              componentDidMount() {
+                this.unsubscribe = store.subscribe(this.forceUpdate.bind(this));
+              }
+
+              componentWillUnmount() {
+                this.unsubscribe();
+              }
+
+            },
+            props
+          );
         }}
       </StoreContext.Consumer>
     )
   }
 ));
 
-const App = () => (
+function App () {
+  return (
   <div className="app">
     <Header />
     <ClockConnected />
     <LotsConnected />
   </div>
-)
+)}
 
-const Header = () => (
+function Header () {
+  return (
   <header className="header">
     <Logo />
   </header>
-)
+)}
 
-const Logo = () => <img className="logo" src="logo.png" alt="" />;
+function Logo () { return <img className="logo" src="logo.png" alt="" />; }
 
-const Clock = ({ time }) => {
-  const isDay = time.getHours() >= 7 && time.getHours() <= 21;
+class Clock extends React.Component {
+  render () {
+    const isDay = this.props.time.getHours() >= 7
+      && this.props.time.getHours() <= 21;
 
-  return (
-    <div className="clock">
-      <span className="value">{time.toLocaleTimeString()}</span>
-      <span className={isDay ? 'icon day' : 'icon night'}></span>
-    </div>
-  )
+    return (
+      <div className="clock">
+        <span className="value">{this.props.time.toLocaleTimeString()}</span>
+        <span className={isDay ? 'icon day' : 'icon night'}></span>
+      </div>
+    )
+  }
 }
 
 const clockMapStateToProps = (state) => ({
@@ -248,9 +269,9 @@ const ClockConnected = connect(
   null
 )(Clock);
 
-const Loading = () => <div className="loading">Loading...</div>;
+function Loading () { return <div className="loading">Loading...</div>; }
 
-const Lots = ({ lots }) => {
+function Lots ({ lots }) {
   if (lots === null) {
     return <Loading />
   }
@@ -272,7 +293,7 @@ const LotsConnected = connect(
   null
 )(Lots);
 
-const Lot = ({ lot, favorite, unfavorite }) => {
+function Lot ({ lot, favorite, unfavorite }) {
   return (
     <article className={'lot' + (lot.favorite ? ' favorite': '')}>
       <div className="price">{lot.price}</div>
@@ -331,24 +352,22 @@ function Favorite({ active, favorite, unfavorite }) {
 }
 
 // ###########################
-
-const renderView = (store) => {
-  ReactDOM.render(
-    <StoreContext.Provider value={store}>
-      <App />
-    </StoreContext.Provider>,
-    document.getElementById('root'),
-  );
-}
-
 const store = new Redux.createStore(Redux.combineReducers({
   clock: clockReducer,
   auction: auctionReducer,
 }));
 
-renderView(store);
+ReactDOM.render(
+  <StoreContext.Provider value={store}>
+    <App />
+  </StoreContext.Provider>,
+  document.getElementById('root'),
+);
 
-store.subscribe(() => renderView(store));
+
+// renderView(store);
+
+// store.subscribe(() => renderView(store));
 
 setInterval(() => {
   store.dispatch(setTime(new Date()));
