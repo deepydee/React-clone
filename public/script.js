@@ -171,10 +171,29 @@ const favoriteLot = (id) => ({
   id
 });
 
+const favoriteAsync = (id) => (
+  (dispatch, getState, { api }) => (
+    api.post(`/lots/${id}/favorite`)
+      .then(() => {
+        dispatch(favoriteLot(id));
+      })
+  )
+);
+
 const unfavoriteLot = (id) => ({
   type: UNFAVORITE_LOT,
   id
 });
+
+const unfavoriteAsync = (id) => (
+  (dispatch, getState, { api }) => (
+    api.post(`/lots/${id}/unfavorite`)
+      .then(() => {
+        dispatch(unfavoriteLot(id));
+      })
+  )
+);
+
 
 // ###########################
 
@@ -217,10 +236,7 @@ const clockMapStateToProps = (state) => ({
   time: state.clock.time
 });
 
-const ClockConnected = ReactRedux.connect(
-  clockMapStateToProps,
-  null
-)(Clock);
+const ClockConnected = ReactRedux.connect(clockMapStateToProps)(Clock);
 
 function Loading () { return <div className="loading">Loading...</div>; }
 
@@ -262,20 +278,10 @@ function Lot ({ lot, favorite, unfavorite }) {
   )
 }
 
-const lotMapDispatchToProps = (dispatch) => ({
-  favorite: (id) => {
-    api.post(`/lots/${id}/favorite`)
-      .then(() => {
-        dispatch(favoriteLot(id));
-      });
-  },
-  unfavorite: (id) => {
-    api.post(`/lots/${id}/unfavorite`)
-      .then(() => {
-        dispatch(unfavoriteLot(id));
-      });
-  }
-});
+const lotMapDispatchToProps = {
+  favorite: favoriteAsync,
+  unfavorite: unfavoriteAsync
+};
 
 const LotConnected = ReactRedux.connect(
   null,
@@ -305,10 +311,28 @@ function Favorite({ active, favorite, unfavorite }) {
 }
 
 // ###########################
-const store = new Redux.createStore(Redux.combineReducers({
-  clock: clockReducer,
-  auction: auctionReducer,
-}));
+
+// const functionalActionSupport = ({ dispatch }) => (
+//   (next) => (
+//     (action) => {
+//       if (typeof action === 'function') {
+//         return action(dispatch);
+//       }
+
+//       return next(action);
+//     }
+//   )
+// );
+
+const thunk = ReduxThunk.default;
+
+const store = new Redux.createStore(
+  Redux.combineReducers({
+    clock: clockReducer,
+    auction: auctionReducer,
+}),
+  Redux.applyMiddleware(thunk.withExtraArgument({ api }))
+);
 
 ReactDOM.render(
   <ReactRedux.Provider store={store}>
